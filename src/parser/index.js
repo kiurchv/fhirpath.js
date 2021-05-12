@@ -4,17 +4,16 @@ const Parser = require("./generated/FHIRPathParser").FHIRPathParser;
 const Listener = require("./generated/FHIRPathListener").FHIRPathListener;
 
 
-var ErrorListener = function(errors) {
-  antlr4.error.ErrorListener.call(this);
-  this.errors = errors;
-  return this;
-};
+class ErrorListener extends antlr4.error.ErrorListener {
+  constructor (errors) {
+    super();
+    this.errors = errors;
+  }
 
-ErrorListener.prototype = Object.create(antlr4.error.ErrorListener.prototype);
-ErrorListener.prototype.constructor = ErrorListener;
-ErrorListener.prototype.syntaxError = function(rec, sym, line, col, msg, e) {
-  this.errors.push([rec, sym, line, col, msg, e]);
-};
+  syntaxError(rec, sym, line, col, msg, e) {
+    this.errors.push([rec, sym, line, col, msg, e]);
+  }
+}
 
 var parse = function(path){
   var chars = new antlr4.InputStream(path);
@@ -35,18 +34,12 @@ var parse = function(path){
 
   var tree = parser.entireExpression();
 
-  function PathListener() {
-    Listener.call(this); // inherit default listener
-    return this;
-  }
-  // inherit default listener
-  PathListener.prototype = Object.create(Listener.prototype);
-  PathListener.prototype.constructor = PathListener;
+  class PathListener extends Listener {}
 
   var ast = {};
   var node;
   var parentStack = [ast];
-  for (let p of Object.keys(Listener.prototype)) {
+  for (let p of Object.getOwnPropertyNames(Listener.prototype)) {
     if (p.startsWith("enter")) {
       PathListener.prototype[p] = function(ctx) {
         let parentNode = parentStack[parentStack.length - 1];
